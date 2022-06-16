@@ -5,49 +5,53 @@ DROP TABLE disciplina;
 DROP TABLE mensalidade;
 DROP TABLE turma;*/
 
+/* Criando um banco de dados*/
+
+create database franq_queries;
+use franq_queries;
+
 /* Criando as tabelas*/
 
 CREATE TABLE aluno (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(100) NOT NULL,
     dt_nascimento DATE
-   );
+);
 
 CREATE TABLE disciplina (
     id INT PRIMARY KEY AUTO_INCREMENT,
     nome VARCHAR(100) NOT NULL,
-    qtd_creditos Smallint 
-   );
-
+    qtd_creditos SMALLINT
+);
 
 CREATE TABLE turma (
-	id INT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     id_disciplina INT NOT NULL,
-    turno enum ('Matutino', 'Vespertino', 'Noturno', 'Integral'),
+    turno ENUM('Matutino', 'Vespertino', 'Noturno', 'Integral'),
     FOREIGN KEY (id_disciplina)
-	REFERENCES disciplina (id)
+        REFERENCES disciplina (id)
 );
 
 CREATE TABLE matricula (
-	id INT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     id_aluno INT NOT NULL,
-    id_turma INT not null,
-    dt_matricula date,
-    periodo_letivo enum ('Semestre1','Semestre2'),
+    id_turma INT NOT NULL,
+    dt_matricula DATE,
+    periodo_letivo ENUM('Semestre1', 'Semestre2'),
     FOREIGN KEY (id_aluno)
-	REFERENCES aluno (id),
-	FOREIGN KEY (id_turma)
-	REFERENCES turma (id)
+        REFERENCES aluno (id),
+    FOREIGN KEY (id_turma)
+        REFERENCES turma (id)
 );
 
 CREATE TABLE mensalidade (
-	id INT PRIMARY KEY AUTO_INCREMENT,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     id_matricula INT NOT NULL,
-    dt_vencimento date,
-    valor float,
-    status_pagto enum('Pago', 'Em atraso'),
+    dt_vencimento DATE,
+    valor FLOAT,
+    status_pagto ENUM('Pago', 'Em atraso'),
     FOREIGN KEY (id_matricula)
-	REFERENCES matricula (id)
+        REFERENCES matricula (id)
 );
 
 /* inserindo dados nas tabelas*/
@@ -116,3 +120,81 @@ INSERT INTO mensalidade (id, id_matricula, dt_vencimento, valor, status_pagto) V
                                                         (12, 8,'2022-05-10', 350.00, 'Pago')
                                                         ;
 
+/* Consultas solicitadas no teste*/
+
+/*a - Apresente uma relação de registros com o nome do aluno e o valor total da mensalidade de
+cada um deles. Considere que a data de vencimento da mensalidade ocorre no mesmo dia do
+mês para cada aluno*/
+
+SELECT 
+    a.nome AS Aluno, SUM(me.valor) AS total_mensalidade
+FROM
+    aluno a
+        LEFT JOIN
+    matricula ma ON ma.id_aluno = a.id
+        JOIN
+    mensalidade me ON me.id_matricula = ma.id_aluno
+GROUP BY a.nome
+ORDER BY a.nome ASC;
+
+/*b - Uma relação com o nome da disciplina, a sua quantidade de créditos, o período letivo e o
+valor total de mensalidades existentes em cada período letivo*/
+
+SELECT 
+    d.nome AS nome_disciplina,
+    d.qtd_creditos AS quantidade_creditos,
+    ma.periodo_letivo,
+    SUM(me.valor) AS valor_total_mensalidades
+FROM
+    disciplina d
+        LEFT JOIN
+    turma t ON t.id_disciplina = d.id
+        JOIN
+    matricula ma ON ma.id_turma = t.id
+        JOIN
+    mensalidade me ON me.id_matricula = ma.id
+GROUP BY d.nome , ma.periodo_letivo
+ORDER BY ma.periodo_letivo
+;
+
+/*c - A lista de alunos e o montante de mensalidade de cada um deles, somente daqueles que
+não possuem nenhuma mensalidade com o status = ‘EM ATRASO’*/
+
+SELECT 
+    a.nome, SUM(me.valor) AS montante_de_mensalidade
+FROM
+    aluno a
+        LEFT JOIN
+    matricula ma ON ma.id_aluno = a.id
+        JOIN
+    mensalidade me ON me.id_matricula = ma.id
+WHERE
+    status_pagto NOT LIKE '%Em atraso'
+GROUP BY a.nome
+ORDER BY a.nome ASC
+;
+
+/*d - A lista com o nome dos alunos que possuem sua primeira matrícula na instituição no
+semestre atual, estão matriculados na disciplina ‘Física I’ e não possuem mensalidades
+registradas no sistema*/
+
+SELECT 
+    a.nome AS Alunos
+FROM
+    aluno a
+        LEFT JOIN
+    matricula ma ON ma.id_aluno = a.id
+        JOIN
+    turma t ON ma.id_turma = t.id
+        JOIN
+    disciplina d ON t.id_disciplina = d.id
+        JOIN
+    mensalidade me ON me.id_matricula = ma.id
+WHERE
+    dt_matricula BETWEEN '2022/01/01' AND '2022/06/30'
+        AND d.nome LIKE '%Fisica I'
+        AND NOT EXISTS( SELECT 
+            id
+        FROM
+            mensalidade)
+;
