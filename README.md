@@ -1,6 +1,7 @@
 # Franq Open Banking (Study Case)
 
-![logo2](https://user-images.githubusercontent.com/101371267/178369024-9b497aed-5ba3-418f-aebf-b169ee950b5d.jpg)
+![logo](https://user-images.githubusercontent.com/101371267/178369149-3e5dae91-d467-4843-9604-e5e31db5e070.png)
+
 
 
 
